@@ -24,21 +24,14 @@ import java.util.concurrent.ExecutionException;
 
 public class database
 {
-    static public DBHandler2 db2;
-    static  public DBHandler db;
+
     int lol;
-    int i=0;
     static public MobileServiceClient fakeClient;
     static public MobileServiceTable<DatabaseAzure> fakeTable;
     DatabaseAzure FromCustomer;
     DatabaseAzure ToCustomer;
-    public void database(int p){
-        //StoreAll();
-    }
-
-
-
-
+    DatabaseAzure BalanceCustomer;
+    public void database(int p){}
 
     public  void register(final String from, final String pin) {
         if (fakeClient == null) {
@@ -81,8 +74,8 @@ public class database
 
                         }
                     });
-                    sendSMS(from,"Congratulations,you are registered with the PIN " + pin);
-                } else sendSMS(from, "You are already registered");
+                    sendSMS(from,"#rayudu\nYou are registered with the PIN " + pin + "\nbalance = Rs" + item.balance);
+                } else sendSMS(from,"Dear Customer, You are already registered");
 
 
             }
@@ -100,12 +93,51 @@ public class database
         }
     }
 
-    public DatabaseAzure addItemInTable(DatabaseAzure item) throws ExecutionException, InterruptedException {
-        DatabaseAzure entity = fakeTable.insert(item).get();
-        return entity;
+
+    public void balance(final String mobilenumber)
+    {
+        if (fakeClient == null) {
+        return;
+        }
+        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected void onPreExecute()
+            {
+
+            }@Override
+            protected Void doInBackground(Void... params) {
+                try {
+                    List<DatabaseAzure> results = fakeTable.execute().get();
+                    lol = 1;
+                    for (DatabaseAzure item : results) {
+                        if (item.mobileNumber.equals(mobilenumber)) {
+                            lol = 0;
+                            BalanceCustomer=item;
+                            return null;
+                        }
+                    }
+
+                } catch (Exception exception) {
+
+                }
+                return null;
+            }@Override
+            protected void onPostExecute(Void res)
+            {
+
+
+                // Create a new item
+                if (lol == 1) {
+                    sendSMS(mobilenumber,"Sorry, You are not registered");
+                } else {
+                    sendSMS(mobilenumber, "#rayudu\n" + "balance = Rs" + String.valueOf(BalanceCustomer.balance));
+                }
+            }
+
+        };
+        runAsyncTask(task);
+
     }
-
-
 
 
     public  void pay(final String from,final String receiver,final String amount,final String pin) {
@@ -133,11 +165,12 @@ public class database
 
             @Override
             protected void onPostExecute(Void res) {
+                if(!FromCustomer.password.equals(pin)) {sendSMS(from,"Incorrect PIN");return;}
 
                 FromCustomer.balance = FromCustomer.balance - Integer.parseInt(amount);
+                if(FromCustomer.balance < 0) {FromCustomer.balance=FromCustomer.balance + Integer.parseInt(amount);sendSMS(from,"You do not have enough funds for this transactions\nbalance = Rs"+ String.valueOf(FromCustomer.balance));return;}
                 ToCustomer.balance = ToCustomer.balance + Integer.parseInt(amount);
-                sendSMS(from, String.valueOf(FromCustomer.balance));
-                sendSMS(from, String.valueOf(ToCustomer.balance));
+
                 AsyncTask<Void, Void, Void> task3 = new AsyncTask<Void, Void, Void>() {
                     @Override
                     protected void onPreExecute() {
@@ -158,8 +191,8 @@ public class database
                     protected void onPostExecute(Void res) {
 
 
-                        sendSMS(from, "Successfully sent Rs." + amount + " to " + receiver);
-                        sendSMS(receiver, "Successfully received Rs." + amount + " from " + from);
+                        sendSMS(from, "#rayudu\nSuccessfully sent Rs." + amount + " to " + receiver +"\nbalance = Rs" + String.valueOf(FromCustomer.balance));
+                        sendSMS(receiver, "#rayudu\nSuccessfully received Rs." + amount + " from " + from +"\nbalance = Rs" + String.valueOf(ToCustomer.balance));
 
                     }
 

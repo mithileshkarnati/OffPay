@@ -54,12 +54,7 @@ public class MainActivity extends Activity {
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
-
-        DBHandler2 db2 = new DBHandler2(this);
-        DBHandler db = new DBHandler(this);
         database temp;
-        database.db2 = db2;
-        database.db = db;
         database.fakeClient=mClient;
         database.fakeTable=mTable;
 
